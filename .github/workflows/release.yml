@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.0.2-gt1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and publish plugin zip
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source at tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          # Strip the leading "v" if present (v1.0.2-gt1 -> 1.0.2-gt1)
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Tag:     $TAG"
+          echo "Version: $VERSION"
+
+      - name: Verify plugin header version matches the tag
+        run: |
+          HEADER_VERSION=$(grep -m1 -oE '^[ *]*Version:[[:space:]]*[^[:space:]]+' gt-ai-provider-for-openai.php \
+            | sed -E 's/^[ *]*Version:[[:space:]]*//')
+          echo "Plugin header version: $HEADER_VERSION"
+          echo "Tag version:           ${{ steps.version.outputs.version }}"
+          if [ "$HEADER_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error ::Plugin header version ($HEADER_VERSION) does not match tag (${{ steps.version.outputs.version }})."
+            exit 1
+          fi
+
+      - name: Set up PHP 7.4 (minimum supported)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: none
+
+      - name: PHP lint (syntax only)
+        run: |
+          set -e
+          find . -type f -name '*.php' \
+            -not -path './.git/*' \
+            -not -path './vendor/*' \
+            -not -path './node_modules/*' \
+            -print0 | xargs -0 -n1 -P4 php -l > /dev/null
+
+      - name: Build plugin zip
+        id: build
+        run: |
+          set -e
+          SLUG="gt-ai-provider-for-openai"
+          VERSION="${{ steps.version.outputs.version }}"
+          OUT_DIR="$GITHUB_WORKSPACE/dist"
+          STAGE="$RUNNER_TEMP/build/$SLUG"
+          mkdir -p "$OUT_DIR" "$STAGE"
+
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.gitignore' \
+            --exclude='.gitattributes' \
+            --exclude='.editorconfig' \
+            --exclude='.distignore' \
+            --exclude='node_modules/' \
+            --exclude='vendor/' \
+            --exclude='tests/' \
+            --exclude='Tests/' \
+            --exclude='phpunit.xml*' \
+            --exclude='phpcs.xml*' \
+            --exclude='phpstan.neon*' \
+            --exclude='composer.lock' \
+            --exclude='*.zip' \
+            --exclude='*.log' \
+            --exclude='CHANGELOG.md' \
+            --exclude='README.md' \
+            ./ "$STAGE/"
+
+          # WordPress.org expects readme.txt (already at repo root — copied by rsync).
+          ZIP_NAME="${SLUG}-${VERSION}.zip"
+          ( cd "$RUNNER_TEMP/build" && zip -rq "$OUT_DIR/$ZIP_NAME" "$SLUG" )
+
+          ls -la "$OUT_DIR"
+          echo "zip=$OUT_DIR/$ZIP_NAME" >> "$GITHUB_OUTPUT"
+          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Compute zip checksum
+        id: checksum
+        run: |
+          cd "$(dirname '${{ steps.build.outputs.zip }}')"
+          SHA=$(sha256sum '${{ steps.build.outputs.zip_name }}' | awk '{print $1}')
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          echo "SHA-256: $SHA"
+
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          if [ -f CHANGELOG.md ]; then
+            awk -v v="$VERSION" '
+              $0 ~ "^## \\[" v "\\]" { capture=1; print; next }
+              capture && $0 ~ "^## \\[" { exit }
+              capture { print }
+            ' CHANGELOG.md > "$NOTES_FILE"
+          fi
+          if [ ! -s "$NOTES_FILE" ]; then
+            printf "Release %s\n\nSee [CHANGELOG.md](CHANGELOG.md) for full notes.\n" "$VERSION" > "$NOTES_FILE"
+          fi
+          {
+            printf "\n---\n\n"
+            printf "**Install:** download \`${{ steps.build.outputs.zip_name }}\` and upload via wp-admin → Plugins → Add New → Upload Plugin.\n\n"
+            printf "SHA-256: \`%s\`\n" "${{ steps.checksum.outputs.sha256 }}"
+          } >> "$NOTES_FILE"
+          echo "notes_file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+          echo "----- notes -----"
+          cat "$NOTES_FILE"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          body_path: ${{ steps.notes.outputs.notes_file }}
+          files: ${{ steps.build.outputs.zip }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          fail_on_unmatched_files: true

@@ -1,0 +1,28 @@
+# Files/directories excluded from the release zip.
+# Kept in sync with the rsync --exclude list in .github/workflows/release.yml.
+
+.git
+.github
+.gitignore
+.gitattributes
+.editorconfig
+.distignore
+
+node_modules
+vendor
+
+tests
+Tests
+phpunit.xml
+phpunit.xml.dist
+phpcs.xml
+phpcs.xml.dist
+phpstan.neon
+phpstan.neon.dist
+composer.lock
+
+*.zip
+*.log
+
+CHANGELOG.md
+README.md
