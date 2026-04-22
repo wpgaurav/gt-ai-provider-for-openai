@@ -1,0 +1,35 @@
+{
+    "name": "gauravtiwari/gt-ai-provider-for-openai",
+    "description": "OpenAI provider for the WordPress AI Client, with latest-model defaults, a custom OpenAI-compatible connector, and seven content-site Abilities.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Gaurav Tiwari",
+            "homepage": "https://gauravtiwari.org/"
+        }
+    ],
+    "keywords": [
+        "wordpress",
+        "openai",
+        "gpt",
+        "gpt-image",
+        "ai-client",
+        "abilities-api",
+        "connectors",
+        "azure-openai",
+        "openrouter"
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "support": {
+        "issues": "https://github.com/wpgaurav/gt-ai-provider-for-openai/issues",
+        "source": "https://github.com/wpgaurav/gt-ai-provider-for-openai"
+    },
+    "autoload": {
+        "psr-4": {
+            "WordPress\\OpenAiAiProvider\\": "src/"
+        }
+    }
+}

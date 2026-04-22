@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Composer / PHP
+vendor/
+composer.phar
+composer.lock
+
+# Local dev / secrets
+.env
+.env.*
+wp-config.php
+
+# Local build artifacts
+node_modules/
+dist/
+*.zip
+
+# Logs
+*.log
+debug.log
+
+# OS / backup files
+Thumbs.db
+*~
+*.bak
+*.orig
