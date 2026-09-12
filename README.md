@@ -1,5 +1,7 @@
 # GT AI Provider for OpenAI
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=flat&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/gauravtiwari)
+
 A WordPress AI Client OpenAI provider with content-site enhancements. Fork of [`wordpress/ai-provider-for-openai`](https://github.com/WordPress/ai-provider-for-openai), extended with:
 
 - Latest-model-first defaults (GPT 5.4, GPT Image 2) with a UI to pick any other model from a live, cached dropdown
@@ -205,6 +207,16 @@ Deactivating the plugin leaves the upstream OpenAI provider registered via WordP
 - Transient `gt_openai_model_list_v1`
 
 ---
+
+## Support This Project
+
+GT AI Provider for OpenAI is my fork of the upstream OpenAI provider for the WordPress AI Client, and I extended it for content sites with latest-model defaults, a second connector for OpenAI-compatible endpoints and 7 new Abilities. It is free and open source under GPL-2.0-or-later, the same license as the original plugin.
+
+If the GT AI Tools panel gave you a featured image or an FAQ accordion without leaving the editor, you can buy me a coffee.
+
+<a href="https://buymeacoffee.com/gauravtiwari"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="50"></a>
+
+You can also star the repo, and when an Ability fails, an issue with your WordPress and PHP versions, the model you picked and the steps you took lets me reproduce it.
 
 ## License
 
